@@ -7,34 +7,35 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'linkedin'
+import os
+import dotenv
 
-SPIDER_MODULES = ['linkedin.spiders']
-NEWSPIDER_MODULE = 'linkedin.spiders'
+BOT_NAME = "linkedin"
+
+SPIDER_MODULES = ["linkedin.spiders"]
+NEWSPIDER_MODULE = "linkedin.spiders"
 
 # HTTPCACHE_ENABLED = True
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
 
-SCRAPEOPS_API_KEY = 'YOUR_API_KEY'
+SCRAPEOPS_API_KEY = os.getenv("API_KEY")
 
 SCRAPEOPS_PROXY_ENABLED = True
 
 # Add In The ScrapeOps Monitoring Extension
 EXTENSIONS = {
-'scrapeops_scrapy.extension.ScrapeOpsMonitor': 500, 
+    "scrapeops_scrapy.extension.ScrapeOpsMonitor": 500,
 }
 
 
 DOWNLOADER_MIDDLEWARES = {
-
     ## ScrapeOps Monitor
-    'scrapeops_scrapy.middleware.retry.RetryMiddleware': 550,
-    'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
-    
+    "scrapeops_scrapy.middleware.retry.RetryMiddleware": 550,
+    "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
     ## Proxy Middleware
-    'scrapeops_scrapy_proxy_sdk.scrapeops_scrapy_proxy_sdk.ScrapeOpsScrapyProxySdk': 725,
+    "scrapeops_scrapy_proxy_sdk.scrapeops_scrapy_proxy_sdk.ScrapeOpsScrapyProxySdk": 725,
 }
 
 # Max Concurrency On ScrapeOps Proxy Free Plan is 1 thread
