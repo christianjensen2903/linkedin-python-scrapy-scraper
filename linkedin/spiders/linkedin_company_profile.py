@@ -46,12 +46,12 @@ class LinkedCompanySpider(scrapy.Spider):
         company_item = {}
 
         company_item["name"] = (
-            response.css(".top-card-layout__title h1::text")
+            response.css(".top-card-layout__title::text")
             .get(default="not-found")
             .strip()
         )
         company_item["summary"] = (
-            response.css(".top-card-layout__second-subline h4 span::text")
+            response.css(".top-card-layout__second-subline span::text")
             .get(default="not-found")
             .strip()
         )
@@ -62,30 +62,91 @@ class LinkedCompanySpider(scrapy.Spider):
             .strip()
         )
 
-        company_details = response.css(".core-section-container__content .mb-2")
+        company_item["website"] = (
+            response.css("div[data-test-id=about-us__website] dd a::attr(href)")
+            .get(default="not-found")
+            .strip()
+        )
+
+        company_item["industry"] = (
+            response.css("div[data-test-id=about-us__industries] dd::text")
+            .extract_first(default="not-found")
+            .strip()
+        )
+
+        company_item["headquarters"] = (
+            response.css("div[data-test-id=about-us__headquarters] dd::text")
+            .get(default="not-found")
+            .strip()
+        )
+
+        company_item["size"] = (
+            response.css("div[data-test-id=about-us__size] dd::text")
+            .get(default="not-found")
+            .strip()
+        )
+
+        company_item["type"] = (
+            response.css("div[data-test-id=about-us__organizationType] dd::text")
+            .get(default="not-found")
+            .strip()
+        )
+
+        company_item["founded"] = (
+            response.css("div[data-test-id=about-us__foundedOn] dd::text")
+            .get(default="not-found")
+            .strip()
+        )
 
         try:
-            company_website_line = company_details[0].css(".text-md::text").getall()
-            company_item["website"] = company_website_line[1].strip()
+            followers_text = response.css(
+                "h3.top-card-layout__first-subline::text"
+            ).getall()[-1]
+            company_item["followers"] = int(
+                "".join(filter(str.isdigit, followers_text))
+            )
         except:
-            company_item["website"] = "not-found"
+            company_item["followers"] = -1
 
-        try:
-            company_industry_line = company_details[1].css(".text-md::text").getall()
-            company_item["industry"] = company_industry_line[1].strip()
-        except:
-            company_item["industry"] = "not-found"
+        # Get posts
+        posts = []
+        for post in response.css("li.mb-1"):
+            time = post.css("time::text").get(default="not-found").strip()
+            text = (
+                post.css(".attributed-text-segment-list__content::text")
+                .get(default="not-found")
+                .strip()
+            )
+            likes = (
+                post.css("span[data-test-id=social-actions__reaction-count]::text")
+                .get(default="0")
+                .strip()
+            )
 
-        try:
-            company_size_line = company_details[2].css(".text-md::text").getall()
-            company_item["size"] = company_size_line[1].strip()
-        except:
-            company_item["size"] = "not-found"
+            comments = (
+                post.css("a[data-test-id=social-actions__comment-count]::text")
+                .get(default="0")
+                .strip()
+            )
 
-        try:
-            company_size_line = company_details[5].css(".text-md::text").getall()
-            company_item["founded"] = company_size_line[1].strip()
-        except:
-            company_item["founded"] = "not-found"
+            if post.css("img").get(default="not-found").strip() != "not-found":
+                has_image = True
+            else:
+                has_image = False
+
+            if post.css("video").get(default="not-found").strip() != "not-found":
+                has_video = True
+            else:
+                has_video = False
+
+            post_item = {
+                "time": time,
+                "text": text,
+                "likes": likes,
+                "comments": comments,
+            }
+            posts.append(post_item)
+
+        company_item["posts"] = posts
 
         yield company_item
