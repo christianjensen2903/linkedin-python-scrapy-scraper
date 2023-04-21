@@ -7,8 +7,8 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-import os
 import dotenv
+import os
 
 BOT_NAME = "linkedin"
 
@@ -20,23 +20,11 @@ NEWSPIDER_MODULE = "linkedin.spiders"
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
 
-SCRAPEOPS_API_KEY = os.getenv("API_KEY")
-
-SCRAPEOPS_PROXY_ENABLED = True
-
-# Add In The ScrapeOps Monitoring Extension
-EXTENSIONS = {
-    "scrapeops_scrapy.extension.ScrapeOpsMonitor": 500,
-}
-
-
 DOWNLOADER_MIDDLEWARES = {
-    ## ScrapeOps Monitor
-    "scrapeops_scrapy.middleware.retry.RetryMiddleware": 550,
-    "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
-    ## Proxy Middleware
     "scrapeops_scrapy_proxy_sdk.scrapeops_scrapy_proxy_sdk.ScrapeOpsScrapyProxySdk": 725,
 }
+REQUEST_FINGERPRINTER_CLASS = "scrapy_zyte_api.ScrapyZyteAPIRequestFingerprinter"
 
-# Max Concurrency On ScrapeOps Proxy Free Plan is 1 thread
-CONCURRENT_REQUESTS = 1
+SCRAPEOPS_API_KEY = os.getenv("SCRAPEOPS_API_KEY")
+SCRAPEOPS_PROXY_ENABLED = True
+SCRAPEOPS_PROXY_SETTINGS = {"country": "us"}
