@@ -20,6 +20,7 @@ class LinkedCompanySpider(scrapy.Spider):
     # add your own list of company urls here
     company_pages = [
         "https://www.linkedin.com/company/usebraintrust",
+        "https://www.linkedin.com/company/copenhagen-fintech",
     ]
 
     def start_requests(self):
@@ -129,7 +130,10 @@ class LinkedCompanySpider(scrapy.Spider):
                 .strip()
             )
 
-            if post.css("img").get(default="not-found").strip() != "not-found":
+            if (
+                post.css(".feed-images-content__list").get(default="not-found").strip()
+                != "not-found"
+            ):
                 has_image = True
             else:
                 has_image = False
@@ -139,11 +143,42 @@ class LinkedCompanySpider(scrapy.Spider):
             else:
                 has_video = False
 
+            if (
+                post.css(".carousel-track-container").get(default="not-found").strip()
+                != "not-found"
+            ):
+                has_carousel = True
+            else:
+                has_carousel = False
+
+            if (
+                post.css(
+                    "a[data-tracking-control-name=organization_guest_main-feed-card_feed-article-content]"
+                )
+                .get(default="not-found")
+                .strip()
+            ) != "not-found":
+                has_link = True
+            else:
+                has_link = False
+
+            if has_image:
+                content_type = "image"
+            elif has_video:
+                content_type = "video"
+            elif has_carousel:
+                content_type = "carousel"
+            elif has_link:
+                content_type = "link"
+            else:
+                content_type = "text"
+
             post_item = {
                 "time": time,
                 "text": text,
                 "likes": likes,
                 "comments": comments,
+                "content_type": content_type,
             }
             posts.append(post_item)
 
