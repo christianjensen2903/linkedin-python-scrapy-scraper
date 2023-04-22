@@ -17,16 +17,15 @@ def get_scrapeops_url(url):
 class LinkedCompanySpider(scrapy.Spider):
     name = "linkedin_company_profile"
 
-    # add your own list of company urls here
-    company_pages = [
-        "https://www.linkedin.com/company/usebraintrust",
-        "https://www.linkedin.com/company/copenhagen-fintech",
-    ]
+    def read_jobs(self):
+        with open("jobs.json") as f:
+            jobs = json.load(f)
+        return jobs
 
     def start_requests(self):
-        # uncomment below if reading the company urls from a file instead of the self.company_pages array
+        company_pages = self.read_jobs()
 
-        for i, company in enumerate(self.company_pages):
+        for i, company in enumerate(company_pages):
             yield scrapy.Request(
                 url=get_scrapeops_url(company),
                 callback=self.parse_response,
@@ -35,14 +34,11 @@ class LinkedCompanySpider(scrapy.Spider):
 
     def parse_response(self, response):
         company_index_tracker = response.meta["company_index_tracker"]
-        print("***************")
-        print(
-            "****** Scraping page "
-            + str(company_index_tracker + 1)
-            + " of "
-            + str(len(self.company_pages))
-        )
-        print("***************")
+
+        if company_index_tracker % 100 == 0:
+            print("***************")
+            print("****** Scraping page " + str(company_index_tracker + 1))
+            print("***************")
 
         company_item = {}
 
