@@ -32,3 +32,6 @@ venv/
 
 ## Custom
 data/
+response.html
+deepfeed_news.html
+asdf.json
