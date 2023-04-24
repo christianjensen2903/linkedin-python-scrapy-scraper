@@ -5,6 +5,8 @@ from urllib.parse import urlencode
 import dotenv
 import os
 import re
+import time
+from datetime import datetime
 
 
 dotenv.load_dotenv()
@@ -35,11 +37,28 @@ class LinkedCompanySpider(scrapy.Spider):
             yield scrapy.Request(
                 url=get_scrapeops_url(company),
                 callback=self.parse_response,
+                cb_kwargs={"linkedin_url": company},
                 meta={"company_index_tracker": i},
             )
 
+    def get_number_of_images(self, post):
+        image_container = post.css(
+            "ul[data-test-id=feed-images-content] li"
+        ).getall()
+
+        n_images = len(image_container)
+
+        extra_imgs = post.css(
+            "div[data-test-id=feed-images-content__overlay]::text"
+        ).get(default="")
+
+        if extra_imgs:
+            n_images += self.txt_to_int(extra_imgs)
+
+        return n_images
+
     def get_content_type(self, post):
-        if post.css("ul[data-test-id=feed-images-content]").get():
+        if post.css("ul[data-test-id=feed-images-content]"):
             return "image"
 
         if post.css("video").get():
@@ -52,6 +71,16 @@ class LinkedCompanySpider(scrapy.Spider):
             "a[data-tracking-control-name=organization_guest_main-feed-card_feed-article-content]"
         ).get():
             return "link"
+
+        if post.css(
+            "a[data-test-id=feed-live-video-content]"
+        ).get():
+            return "live_stream"
+
+        if post.css(
+            "article[data-test-id=feed-reshare-content]"
+        ):
+            return "reshare"
 
         if post.css(".update-components-poll").get():
             return "poll"
@@ -111,71 +140,86 @@ class LinkedCompanySpider(scrapy.Spider):
 
         return followers
 
-    def parse_response(self, response):
+    def get_basic_info(self, response):
+        def get_simple(selector):
+            return (
+                response.css(selector)
+                .get(default="")
+                .strip()
+            )
+
+        needed_values = {
+            "name": ".top-card-layout__title::text",
+            "summary": ".top-card-layout__second-subline span::text",
+            "description": ".core-section-container__content p::text",
+            "website": "div[data-test-id=about-us__website] dd a::attr(href)",
+            "industry": "div[data-test-id=about-us__industries] dd::text",
+            "headquarters": "div[data-test-id=about-us__headquarters] dd::text",
+            "size": "div[data-test-id=about-us__size] dd::text",
+            "type": "div[data-test-id=about-us__organizationType] dd::text",
+            "founded": "div[data-test-id=about-us__foundedOn] dd::text",
+            "specialties": "div[data-test-id=about-us__specialties] dd::text",
+        }
+        company_item = {
+            "scraped_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        for key, selector in needed_values.items():
+            company_item[key] = get_simple(selector)
+
+        return company_item
+
+    def get_show_more_links(self, container):
+        soup = BeautifulSoup(
+            container,
+            "html.parser"
+        )
+        links = soup.find_all("a")
+
+        return [link["href"] for link in links]
+
+    def get_affiliated_pages(self, response):
+        container = response.css(
+            "section[data-test-id=affiliated-pages]"
+        ).get(default="")
+
+        if not container:
+            return []
+
+        return self.get_show_more_links(container)
+
+    def get_similar_pages(self, response):
+        container = response.css(
+            "section[data-test-id=similar-pages]"
+        ).get(default="")
+
+        if not container:
+            return []
+
+        return self.get_show_more_links(container)
+
+    def is_repost(self, post):
+        container = post.css(
+            "p.main-feed-activity-card__header"
+        ).get(default="")
+
+        return "reposted" in container
+
+    def parse_response(self, response, linkedin_url):
+        with open("response.html", "w") as f:
+            f.write(response.text)
+
         company_index_tracker = response.meta["company_index_tracker"]
 
         if company_index_tracker % 100 == 0:
-            print("***************")
-            print("****** Scraping page " + str(company_index_tracker + 1))
-            print("***************")
+            print("***********************")
+            print(f"*** Scraping page {company_index_tracker + 1} ***")
+            print("***********************")
 
-        company_item = {}
-
-        company_item["name"] = (
-            response.css(".top-card-layout__title::text")
-            .get(default="")
-            .strip()
-        )
-
-        company_item["summary"] = (
-            response.css(".top-card-layout__second-subline span::text")
-            .get(default="")
-            .strip()
-        )
-
-        company_item["description"] = (
-            response.css(".core-section-container__content p::text")
-            .get(default="")
-            .strip()
-        )
-
-        company_item["website"] = (
-            response.css(
-                "div[data-test-id=about-us__website] dd a::attr(href)")
-            .get(default="")
-            .strip()
-        )
-
-        company_item["industry"] = (
-            response.css("div[data-test-id=about-us__industries] dd::text")
-            .extract_first(default="")
-            .strip()
-        )
-
-        company_item["headquarters"] = (
-            response.css("div[data-test-id=about-us__headquarters] dd::text")
-            .get(default="")
-            .strip()
-        )
-
-        company_item["size"] = (
-            response.css("div[data-test-id=about-us__size] dd::text")
-            .get(default="")
-            .strip()
-        )
-
-        company_item["type"] = (
-            response.css(
-                "div[data-test-id=about-us__organizationType] dd::text")
-            .get(default="")
-            .strip()
-        )
-
-        company_item["founded"] = (
-            response.css("div[data-test-id=about-us__foundedOn] dd::text")
-            .get(default="")
-            .strip()
-        )
+        company_item = self.get_basic_info(response)
+        company_item["linkedin_url"] = linkedin_url
+        company_item["affiliated_pages"] = self.get_affiliated_pages(response)
+        company_item["similar_pages"] = self.get_similar_pages(response)
 
         try:
             followers_text = response.css(
@@ -189,15 +233,31 @@ class LinkedCompanySpider(scrapy.Spider):
 
         posts = []
         for post in response.css("li.mb-1"):
+            if self.is_repost(post):
+                continue
+
             time = post.css("time::text").get(default="").strip()
 
-            posts.append({
+            post_data = {
                 "time": time,
                 "text": self.extract_post_text(post),
                 "likes": self.get_likes(post),
                 "comments": self.get_comments(post),
-                "content_type": self.get_content_type(post),
-            })
+                "content_type": self.get_content_type(post)
+            }
+
+            if post_data["content_type"] == "link":
+                post_data["external_link"] = post.css(
+                    "a[data-tracking-control-name=organization_guest_main-feed-card_feed-article-content]::attr(href)"
+                ).get(default="")
+
+            if post_data["content_type"] == "image":
+                post_data["n_images"] = self.get_number_of_images(post)
+
+            if post_data["text"]:
+                posts.append(post_data)
+            else:
+                print("🔴 Missing text - happens sometimes")
 
         company_item["posts"] = posts
 

@@ -1,14 +1,18 @@
+# Command
+
+`scrapy crawl linkedin_company_profile -O asdf.json`
+
 # linkedin-python-scrapy-scraper
-Python Scrapy spiders that scrape job data & people and company profiles from [LinkedIn.com](https://www.linkedin.com/). 
+
+Python Scrapy spiders that scrape job data & people and company profiles from [LinkedIn.com](https://www.linkedin.com/).
 
 This Scrapy project contains 3 seperate spiders:
 
-| Spider  |      Description      |
-|----------|-------------|
-| `linkedin_people_profile` |  Scrapes people data from LinkedIn people profile pages. | 
-| `linkedin_jobs` |  Scrapes job data from LinkedIn (https://www.linkedin.com/jobs/search) | 
-| `linkedin_company_profile` |  Scrapes company data from LinkedIn company profile pages. | 
-
+| Spider                     | Description                                                           |
+| -------------------------- | --------------------------------------------------------------------- |
+| `linkedin_people_profile`  | Scrapes people data from LinkedIn people profile pages.               |
+| `linkedin_jobs`            | Scrapes job data from LinkedIn (https://www.linkedin.com/jobs/search) |
+| `linkedin_company_profile` | Scrapes company data from LinkedIn company profile pages.             |
 
 The following articles go through in detail how these LinkedIn spiders were developed, which you can use to understand the spiders and edit them for your own use case.
 
@@ -17,6 +21,7 @@ The following articles go through in detail how these LinkedIn spiders were deve
 - [Python Scrapy: Build A LinkedIn.com Company Profile Scraper](https://scrapeops.io/python-scrapy-playbook/python-scrapy-linkedin-company-scraper/)
 
 ## ScrapeOps Proxy
+
 This LinkedIn spider uses [ScrapeOps Proxy](https://scrapeops.io/proxy-aggregator/) as the proxy solution. ScrapeOps has a free plan that allows you to make up to 1,000 requests per month which makes it ideal for the development phase, but can be easily scaled up to millions of pages per month if needs be.
 
 You can [sign up for a free API key here](https://scrapeops.io/app/register/main).
@@ -29,7 +34,7 @@ pip install scrapeops-scrapy-proxy-sdk
 
 ```
 
-Then activate the ScrapeOps Proxy by adding your API key to the `SCRAPEOPS_API_KEY` in the ``settings.py`` file.
+Then activate the ScrapeOps Proxy by adding your API key to the `SCRAPEOPS_API_KEY` in the `settings.py` file.
 
 ```python
 
@@ -43,11 +48,11 @@ DOWNLOADER_MIDDLEWARES = {
 
 ```
 
-
 ## ScrapeOps Monitoring
-To monitor our scraper, this spider uses the [ScrapeOps Monitor](https://scrapeops.io/monitoring-scheduling/), a free monitoring tool specifically designed for web scraping. 
 
-**Live demo here:** [ScrapeOps Demo](https://scrapeops.io/app/login/demo) 
+To monitor our scraper, this spider uses the [ScrapeOps Monitor](https://scrapeops.io/monitoring-scheduling/), a free monitoring tool specifically designed for web scraping.
+
+**Live demo here:** [ScrapeOps Demo](https://scrapeops.io/app/login/demo)
 
 ![ScrapeOps Dashboard](https://scrapeops.io/assets/images/scrapeops-promo-286a59166d9f41db1c195f619aa36a06.png)
 
@@ -59,8 +64,7 @@ pip install scrapeops-scrapy
 
 ```
 
-
-Then activate the ScrapeOps Proxy by adding your API key to the `SCRAPEOPS_API_KEY` in the ``settings.py`` file.
+Then activate the ScrapeOps Proxy by adding your API key to the `SCRAPEOPS_API_KEY` in the `settings.py` file.
 
 ```python
 
@@ -68,7 +72,7 @@ SCRAPEOPS_API_KEY = 'YOUR_API_KEY'
 
 # Add In The ScrapeOps Monitoring Extension
 EXTENSIONS = {
-'scrapeops_scrapy.extension.ScrapeOpsMonitor': 500, 
+'scrapeops_scrapy.extension.ScrapeOpsMonitor': 500,
 }
 
 
@@ -77,7 +81,7 @@ DOWNLOADER_MIDDLEWARES = {
     ## ScrapeOps Monitor
     'scrapeops_scrapy.middleware.retry.RetryMiddleware': 550,
     'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
-    
+
     ## Proxy Middleware
     'scrapeops_scrapy_proxy_sdk.scrapeops_scrapy_proxy_sdk.ScrapeOpsScrapyProxySdk': 725,
 }
@@ -86,8 +90,8 @@ DOWNLOADER_MIDDLEWARES = {
 
 If you are using both the ScrapeOps Proxy & Monitoring then you just need to enter the API key once.
 
-
 ## Running The Scrapers
+
 Make sure Scrapy and the ScrapeOps Monitor is installed:
 
 ```
@@ -103,7 +107,7 @@ To run the LinkedIn spiders you should first set the search query parameters you
 def start_requests(self):
     profile_list = ['reidhoffman']
     for profile in profile_list:
-        linkedin_people_url = f'https://www.linkedin.com/in/{profile}/' 
+        linkedin_people_url = f'https://www.linkedin.com/in/{profile}/'
         yield scrapy.Request(url=linkedin_people_url, callback=self.parse_profile, meta={'profile': profile, 'linkedin_url': linkedin_people_url})
 
 
@@ -117,13 +121,14 @@ scrapy crawl linkedin_people_profile
 
 ```
 
-
 ## Customizing The LinkedIn People Profile Scraper
+
 The following are instructions on how to modify the LinkedIn People Profile scraper for your particular use case.
 
 Check out this [guide to building a LinkedIn.com Scrapy people profile spider](https://scrapeops.io/python-scrapy-playbook/python-scrapy-linkedin-people-scraper//) if you need any more information.
 
 ### Configuring LinkedIn People Profile Search
+
 To change the query parameters for the people profile search just change the profiles in the `profile_list` lists in the spider.
 
 For example:
@@ -133,12 +138,13 @@ For example:
 def start_requests(self):
     profile_list = ['reidhoffman', 'other_person']
     for profile in profile_list:
-        linkedin_people_url = f'https://www.linkedin.com/in/{profile}/' 
+        linkedin_people_url = f'https://www.linkedin.com/in/{profile}/'
         yield scrapy.Request(url=linkedin_people_url, callback=self.parse_profile, meta={'profile': profile, 'linkedin_url': linkedin_people_url})
 
 ```
 
 ### Extract More/Different Data
+
 LinkedIn People Profile pages contain a lot of useful data, however, in this spider is configured to only parse:
 
 - Name
@@ -152,11 +158,11 @@ LinkedIn People Profile pages contain a lot of useful data, however, in this spi
 
 You can expand or change the data that gets extract by adding additional parsers and adding the data to the `item` that is yielded in the `parse_profiles` method:
 
-
 ### Speeding Up The Crawl
-The spiders are set to only use 1 concurrent thread in the ``settings.py`` file as the ScrapeOps Free Proxy Plan only gives you 1 concurrent thread.
 
-However, if you upgrade to a paid ScrapeOps Proxy plan you will have more concurrent threads. Then you can increase the concurrency limit in your scraper by updating the `CONCURRENT_REQUESTS` value in your ``settings.py`` file.
+The spiders are set to only use 1 concurrent thread in the `settings.py` file as the ScrapeOps Free Proxy Plan only gives you 1 concurrent thread.
+
+However, if you upgrade to a paid ScrapeOps Proxy plan you will have more concurrent threads. Then you can increase the concurrency limit in your scraper by updating the `CONCURRENT_REQUESTS` value in your `settings.py` file.
 
 ```python
 # settings.py
@@ -166,6 +172,7 @@ CONCURRENT_REQUESTS = 10
 ```
 
 ### Storing Data
+
 The spiders are set to save the scraped data into a CSV file and store it in a data folder using [Scrapy's Feed Export functionality](https://docs.scrapy.org/en/latest/topics/feed-exports.html).
 
 ```python
@@ -186,6 +193,7 @@ Or if you would like to save your data to another type of database then be sure 
 - [Saving Data to Postgres Database](https://scrapeops.io/python-scrapy-playbook/scrapy-save-data-postgres)
 
 ### Deactivating ScrapeOps Proxy & Monitor
+
 To deactivate the ScrapeOps Proxy & Monitor simply comment out the follow code in your `settings.py` file:
 
 ```python
@@ -196,7 +204,7 @@ To deactivate the ScrapeOps Proxy & Monitor simply comment out the follow code i
 # SCRAPEOPS_PROXY_ENABLED = True
 
 # EXTENSIONS = {
-# 'scrapeops_scrapy.extension.ScrapeOpsMonitor': 500, 
+# 'scrapeops_scrapy.extension.ScrapeOpsMonitor': 500,
 # }
 
 # DOWNLOADER_MIDDLEWARES = {
@@ -204,7 +212,7 @@ To deactivate the ScrapeOps Proxy & Monitor simply comment out the follow code i
 #     ## ScrapeOps Monitor
 #     'scrapeops_scrapy.middleware.retry.RetryMiddleware': 550,
 #     'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
-    
+
 #     ## Proxy Middleware
 #     'scrapeops_scrapy_proxy_sdk.scrapeops_scrapy_proxy_sdk.ScrapeOpsScrapyProxySdk': 725,
 # }
@@ -212,4 +220,3 @@ To deactivate the ScrapeOps Proxy & Monitor simply comment out the follow code i
 
 
 ```
-
