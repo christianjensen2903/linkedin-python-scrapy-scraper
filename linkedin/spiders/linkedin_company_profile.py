@@ -8,7 +8,7 @@ import re
 import time
 from datetime import datetime
 
-
+IS_DEBUGGING = False
 dotenv.load_dotenv()
 
 
@@ -26,12 +26,14 @@ class LinkedCompanySpider(scrapy.Spider):
     name = "linkedin_company_profile"
 
     def read_jobs(self):
-        with open("jobs.json") as f:
-            jobs = json.load(f)
-        return jobs
-        # return [
-        #     "https://www.linkedin.com/company/uber-com"
-        # ]
+        if IS_DEBUGGING:
+            return [
+                "https://www.linkedin.com/company/deepmind/"
+            ]
+        else:
+            with open("jobs.json") as f:
+                jobs = json.load(f)
+            return jobs
 
     def start_requests(self):
         company_pages = self.read_jobs()
@@ -61,6 +63,14 @@ class LinkedCompanySpider(scrapy.Spider):
         return n_images
 
     def get_content_type(self, post):
+        # Necessary Ordering:
+        # reshare > all else
+
+        if post.css(
+            "article[data-test-id=feed-reshare-content]"
+        ):
+            return "reshare"
+
         if post.css("ul[data-test-id=feed-images-content]"):
             return "image"
 
@@ -85,11 +95,6 @@ class LinkedCompanySpider(scrapy.Spider):
         ).get():
             return "live_stream"
 
-        if post.css(
-            "article[data-test-id=feed-reshare-content]"
-        ):
-            return "reshare"
-
         if post.css(".update-components-poll").get():
             return "poll"
 
@@ -104,6 +109,15 @@ class LinkedCompanySpider(scrapy.Spider):
             container.get(),
             "html.parser"
         )
+
+        try:
+            # Remove reshared article if it exists
+            soup.find(
+                "article", {"data-test-id": "feed-reshare-content"}
+            ).decompose()
+        except AttributeError:
+            pass
+
         post = soup.find(
             "p", {"class": "attributed-text-segment-list__content"}
         )
@@ -214,8 +228,9 @@ class LinkedCompanySpider(scrapy.Spider):
         return "reposted" in container
 
     def parse_response(self, response, linkedin_url):
-        # with open("response.html", "w") as f:
-        #     f.write(response.text)
+        if IS_DEBUGGING:
+            with open("response.html", "w") as f:
+                f.write(response.text)
 
         company_index_tracker = response.meta["company_index_tracker"]
 
