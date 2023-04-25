@@ -15,6 +15,8 @@ BOT_NAME = "linkedin"
 SPIDER_MODULES = ["linkedin.spiders"]
 NEWSPIDER_MODULE = "linkedin.spiders"
 LOG_LEVEL = 'INFO'
+CONCURRENT_REQUESTS = 25
+CONCURRENT_REQUESTS_PER_DOMAIN = 25
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
