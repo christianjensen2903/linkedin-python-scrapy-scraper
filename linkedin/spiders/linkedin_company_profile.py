@@ -42,8 +42,10 @@ class LinkedCompanySpider(scrapy.Spider):
             yield scrapy.Request(
                 url=get_scrapeops_url(company),
                 callback=self.parse_response,
-                cb_kwargs={"linkedin_url": company},
-                meta={"company_index_tracker": i},
+                cb_kwargs={
+                    "linkedin_url": company,
+                    "company_index_tracker": i
+                }
             )
 
     def get_number_of_images(self, post):
@@ -227,17 +229,13 @@ class LinkedCompanySpider(scrapy.Spider):
 
         return "reposted" in container
 
-    def parse_response(self, response, linkedin_url):
+    def parse_response(self, response, linkedin_url, company_index_tracker):
         if IS_DEBUGGING:
             with open("response.html", "w") as f:
                 f.write(response.text)
 
-        company_index_tracker = response.meta["company_index_tracker"]
-
         if company_index_tracker % 100 == 0:
-            print("***********************")
-            print(f"*** Scraping page {company_index_tracker + 1} ***")
-            print("***********************")
+            print(f"🟢 Scraping page {company_index_tracker + 1}")
 
         company_item = self.get_basic_info(response)
         company_item["linkedin_url"] = linkedin_url
