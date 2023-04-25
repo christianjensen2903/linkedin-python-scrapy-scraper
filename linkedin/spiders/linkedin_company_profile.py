@@ -29,6 +29,9 @@ class LinkedCompanySpider(scrapy.Spider):
         with open("jobs.json") as f:
             jobs = json.load(f)
         return jobs
+        # return [
+        #     "https://www.linkedin.com/company/uber-com"
+        # ]
 
     def start_requests(self):
         company_pages = self.read_jobs()
@@ -64,13 +67,18 @@ class LinkedCompanySpider(scrapy.Spider):
         if post.css("video").get():
             return "video"
 
-        if post.css(".carousel-track-container").get() or post.css("iframe").get():
-            return "carousel"
+        if post.css(
+            "div[data-test-id=ingested-content-summary-external-video-content]"
+        ).get():
+            return "external_video"
 
         if post.css(
             "a[data-tracking-control-name=organization_guest_main-feed-card_feed-article-content]"
         ).get():
             return "link"
+
+        if post.css(".carousel-track-container").get() or post.css("iframe").get():
+            return "carousel"
 
         if post.css(
             "a[data-test-id=feed-live-video-content]"
@@ -206,8 +214,8 @@ class LinkedCompanySpider(scrapy.Spider):
         return "reposted" in container
 
     def parse_response(self, response, linkedin_url):
-        with open("response.html", "w") as f:
-            f.write(response.text)
+        # with open("response.html", "w") as f:
+        #     f.write(response.text)
 
         company_index_tracker = response.meta["company_index_tracker"]
 
